@@ -1,0 +1,65 @@
+name: Update to new Airframes release
+
+# Fired by the airframesio/assets release pipeline once a desktop release is
+# published:
+#
+#   gh api repos/<owner>/airframes-desktop-flake/dispatches \
+#     -f event_type=desktop-release -f 'client_payload[tag]=desktop-vX.Y.Z'
+#
+# Can also be run by hand; leave the tag empty to pick the latest release.
+on:
+  repository_dispatch:
+    types:
+      - desktop-release
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. desktop-v0.2.5); empty for latest"
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          token: ${{ secrets.PAT }}
+
+      - name: Set up Determinate Nix
+        uses: DeterminateSystems/determinate-nix-action@61cbfe2efc2d4e7a8a6d56967c3c1058e846c858 # v3
+
+      - name: Update sources.json
+        id: update
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.client_payload.tag || inputs.tag }}
+        run: |
+          version="$(nix develop --command ./scripts/update.sh ${TAG:+"$TAG"})"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # Opened with a PAT so the PR triggers CI; auto-merge lands it once the
+      # build, install checks and VM test pass.
+      - name: Open auto-merging pull request
+        if: steps.update.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
+          VERSION: ${{ steps.update.outputs.version }}
+        run: |
+          branch="update-airframes-$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "feat: update airframes-desktop to $VERSION"
+          git push --force origin "$branch"
+          gh pr create --fill --head "$branch" \
+            || echo "pull request for $branch already exists"
+          gh pr merge "$branch" --auto --squash

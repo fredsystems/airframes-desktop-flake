@@ -1,0 +1,14 @@
+{
+  "version": "0.2.5",
+  "tag": "desktop-v0.2.5",
+  "sources": {
+    "x86_64-linux": {
+      "url": "https://github.com/airframesio/assets/releases/download/desktop-v0.2.5/Airframes_0.2.5_amd64.deb",
+      "hash": "sha256-04z6jvjNXwTm33d/0oRYwnMwVlELHKJ0DqwlbH1+rv4="
+    },
+    "darwin": {
+      "url": "https://github.com/airframesio/assets/releases/download/desktop-v0.2.5/Airframes_universal.app.tar.gz",
+      "hash": "sha256-MhXtYFu0DdgwG36GIpWrZvVx4eAh0IJEg8fD/fUKpO4="
+    }
+  }
+}
