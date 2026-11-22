@@ -24,6 +24,9 @@ jobs:
       - name: Run pre-commit
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # This job also runs on pushes to main, where the checkout is on
+          # main; the hook only exists to stop local commits there.
+          SKIP: no-commit-to-branch
         run: |
           nix develop --command bash -e -c '
             set -euxo pipefail
