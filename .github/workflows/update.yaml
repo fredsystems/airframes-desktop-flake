@@ -42,9 +42,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.client_payload.tag || inputs.tag }}
+        # The dev shell's shellHook prints to stdout, so read the result from
+        # sources.json rather than capturing the script's output.
         run: |
-          version="$(nix develop --command ./scripts/update.sh ${TAG:+"$TAG"})"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          nix develop --command ./scripts/update.sh ${TAG:+"$TAG"} >&2
+          if ! git diff --quiet -- sources.json; then
+            echo "version=$(jq -r .version sources.json)" >> "$GITHUB_OUTPUT"
+          fi
 
       # Opened with a PAT so the PR triggers CI; auto-merge lands it once the
       # build, install checks and VM test pass.
